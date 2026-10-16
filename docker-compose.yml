@@ -1,0 +1,82 @@
+services:
+  postgres-auth:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: lumiere_auth
+      POSTGRES_USER: lumiere
+      POSTGRES_PASSWORD: lumiere
+    ports:
+      - "5434:5432"
+    volumes:
+      - lumiere_auth_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumiere -d lumiere_auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lumiere-net
+
+  postgres-favoritos:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: lumiere_favoritos
+      POSTGRES_USER: lumiere
+      POSTGRES_PASSWORD: lumiere
+    ports:
+      - "5433:5432"
+    volumes:
+      - lumiere_favoritos_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumiere -d lumiere_favoritos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lumiere-net
+
+  lumiere-auth:
+    build: ./lumiere-auth
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/lumiere_auth
+      SPRING_DATASOURCE_USERNAME: lumiere
+      SPRING_DATASOURCE_PASSWORD: lumiere
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    networks:
+      - lumiere-net
+
+  lumiere-catalogo:
+    build: ./lumiere-catalogo
+    ports:
+      - "8082:8082"
+    environment:
+      TMDB_API_TOKEN: ${TMDB_API_TOKEN}
+    networks:
+      - lumiere-net
+
+  lumiere-favoritos:
+    build: ./lumiere-favoritos
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-favoritos:5432/lumiere_favoritos
+      SPRING_DATASOURCE_USERNAME: lumiere
+      SPRING_DATASOURCE_PASSWORD: lumiere
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres-favoritos:
+        condition: service_healthy
+    networks:
+      - lumiere-net
+
+networks:
+  lumiere-net:
+
+volumes:
+  lumiere_auth_data:
+  lumiere_favoritos_data:
