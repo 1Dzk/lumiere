@@ -31,12 +31,15 @@ O `lumiere-gateway` é o jeito recomendado de acessar o sistema (porta `8080`, r
 
 ## Configuração
 
-```powershell
-Copy-Item .env.example .env
+Crie um arquivo `.env` na raiz do projeto com:
+
+```
+JWT_SECRET=qualquer-string-com-pelo-menos-32-caracteres
+TMDB_API_TOKEN=seu-api-read-access-token-da-tmdb
+NOTIFICACOES_INTERVALO_MS=60000
 ```
 
-Edite o `.env` e preencha:
-- `JWT_SECRET` — qualquer string com pelo menos 32 caracteres (segredo compartilhado entre `lumiere-auth` e `lumiere-favoritos`)
+- `JWT_SECRET` — segredo compartilhado entre `lumiere-auth` e `lumiere-favoritos` (um assina o token, o outro valida)
 - `TMDB_API_TOKEN` — o "API Read Access Token" da TMDB
 - `NOTIFICACOES_INTERVALO_MS` — de quanto em quanto tempo o job de notificações roda (padrão `60000` = 1 minuto)
 
