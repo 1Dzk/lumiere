@@ -35,6 +35,12 @@ public class GlobalExceptionHandler {
                 .body(corpoErro(HttpStatus.NOT_FOUND, ex.getMessage(), null));
     }
 
+    @ExceptionHandler(TituloInvalidoException.class)
+    public ResponseEntity<Map<String, Object>> handleTituloInvalido(TituloInvalidoException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(corpoErro(HttpStatus.NOT_FOUND, ex.getMessage(), null));
+    }
+
     private Map<String, Object> corpoErro(HttpStatus status, String mensagem, Map<String, String> erros) {
         Map<String, Object> corpo = new LinkedHashMap<>();
         corpo.put("timestamp", Instant.now());

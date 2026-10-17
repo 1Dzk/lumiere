@@ -68,9 +68,66 @@ services:
       SPRING_DATASOURCE_USERNAME: lumiere
       SPRING_DATASOURCE_PASSWORD: lumiere
       JWT_SECRET: ${JWT_SECRET}
+      CATALOGO_URL: http://lumiere-catalogo:8082
     depends_on:
       postgres-favoritos:
         condition: service_healthy
+    networks:
+      - lumiere-net
+
+  postgres-notificacoes:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: lumiere_notificacoes
+      POSTGRES_USER: lumiere
+      POSTGRES_PASSWORD: lumiere
+    ports:
+      - "5435:5432"
+    volumes:
+      - lumiere_notificacoes_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumiere -d lumiere_notificacoes"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lumiere-net
+
+  lumiere-notificacoes:
+    build: ./lumiere-notificacoes
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notificacoes:5432/lumiere_notificacoes
+      SPRING_DATASOURCE_USERNAME: lumiere
+      SPRING_DATASOURCE_PASSWORD: lumiere
+      FAVORITOS_URL: http://lumiere-favoritos:8083
+      CATALOGO_URL: http://lumiere-catalogo:8082
+      NOTIFICACOES_INTERVALO_MS: ${NOTIFICACOES_INTERVALO_MS:-60000}
+    depends_on:
+      postgres-notificacoes:
+        condition: service_healthy
+      lumiere-favoritos:
+        condition: service_started
+      lumiere-catalogo:
+        condition: service_started
+    networks:
+      - lumiere-net
+
+  lumiere-gateway:
+    build: ./lumiere-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      LUMIERE_AUTH_URL: http://lumiere-auth:8081
+      LUMIERE_CATALOGO_URL: http://lumiere-catalogo:8082
+      LUMIERE_FAVORITOS_URL: http://lumiere-favoritos:8083
+      LUMIERE_NOTIFICACOES_URL: http://lumiere-notificacoes:8084
+    depends_on:
+      - lumiere-auth
+      - lumiere-catalogo
+      - lumiere-favoritos
+      - lumiere-notificacoes
     networks:
       - lumiere-net
 
@@ -80,3 +137,4 @@ networks:
 volumes:
   lumiere_auth_data:
   lumiere_favoritos_data:
+  lumiere_notificacoes_data:

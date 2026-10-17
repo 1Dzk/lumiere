@@ -1,9 +1,11 @@
 package com.senai.lumiere.favoritos.service;
 
+import com.senai.lumiere.favoritos.client.CatalogoClient;
 import com.senai.lumiere.favoritos.dto.DesejoRequest;
 import com.senai.lumiere.favoritos.dto.DesejoResponse;
 import com.senai.lumiere.favoritos.exception.ItemDuplicadoException;
 import com.senai.lumiere.favoritos.exception.RecursoNaoEncontradoException;
+import com.senai.lumiere.favoritos.exception.TituloInvalidoException;
 import com.senai.lumiere.favoritos.model.Desejo;
 import com.senai.lumiere.favoritos.repository.DesejoRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +18,13 @@ import java.util.List;
 public class DesejoService {
 
     private final DesejoRepository repository;
+    private final CatalogoClient catalogoClient;
 
     public DesejoResponse adicionar(Long usuarioId, DesejoRequest request) {
+        if (!catalogoClient.tituloExiste(request.tituloId(), request.tipo())) {
+            throw new TituloInvalidoException(request.tituloId());
+        }
+
         if (repository.existsByUsuarioIdAndTituloIdAndTipoTitulo(usuarioId, request.tituloId(), request.tipo())) {
             throw new ItemDuplicadoException("Título já está na lista de desejos");
         }
