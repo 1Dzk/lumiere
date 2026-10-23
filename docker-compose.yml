@@ -35,7 +35,7 @@ services:
     networks:
       - lumiere-net
 
-  lumiere-auth:
+  auth:
     build: ./lumiere-auth
     ports:
       - "8081:8081"
@@ -56,7 +56,7 @@ services:
     networks:
       - lumiere-net
 
-  lumiere-catalogo:
+  catalogo:
     build: ./lumiere-catalogo
     ports:
       - "8082:8082"
@@ -71,7 +71,7 @@ services:
     networks:
       - lumiere-net
 
-  lumiere-favoritos:
+  favoritos:
     build: ./lumiere-favoritos
     ports:
       - "8083:8083"
@@ -80,7 +80,7 @@ services:
       SPRING_DATASOURCE_USERNAME: lumiere
       SPRING_DATASOURCE_PASSWORD: lumiere
       JWT_SECRET: ${JWT_SECRET}
-      CATALOGO_URL: http://lumiere-catalogo:8082
+      CATALOGO_URL: http://catalogo:8082
     depends_on:
       postgres-favoritos:
         condition: service_healthy
@@ -111,7 +111,7 @@ services:
     networks:
       - lumiere-net
 
-  lumiere-notificacoes:
+  notificacoes:
     build: ./lumiere-notificacoes
     ports:
       - "8084:8084"
@@ -119,15 +119,15 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notificacoes:5432/lumiere_notificacoes
       SPRING_DATASOURCE_USERNAME: lumiere
       SPRING_DATASOURCE_PASSWORD: lumiere
-      FAVORITOS_URL: http://lumiere-favoritos:8083
-      CATALOGO_URL: http://lumiere-catalogo:8082
+      FAVORITOS_URL: http://favoritos:8083
+      CATALOGO_URL: http://catalogo:8082
       NOTIFICACOES_INTERVALO_MS: ${NOTIFICACOES_INTERVALO_MS:-60000}
     depends_on:
       postgres-notificacoes:
         condition: service_healthy
-      lumiere-favoritos:
+      favoritos:
         condition: service_healthy
-      lumiere-catalogo:
+      catalogo:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
@@ -138,23 +138,23 @@ services:
     networks:
       - lumiere-net
 
-  lumiere-gateway:
+  gateway:
     build: ./lumiere-gateway
     ports:
       - "8080:8080"
     environment:
-      LUMIERE_AUTH_URL: http://lumiere-auth:8081
-      LUMIERE_CATALOGO_URL: http://lumiere-catalogo:8082
-      LUMIERE_FAVORITOS_URL: http://lumiere-favoritos:8083
-      LUMIERE_NOTIFICACOES_URL: http://lumiere-notificacoes:8084
+      LUMIERE_AUTH_URL: http://auth:8081
+      LUMIERE_CATALOGO_URL: http://catalogo:8082
+      LUMIERE_FAVORITOS_URL: http://favoritos:8083
+      LUMIERE_NOTIFICACOES_URL: http://notificacoes:8084
     depends_on:
-      lumiere-auth:
+      auth:
         condition: service_healthy
-      lumiere-catalogo:
+      catalogo:
         condition: service_healthy
-      lumiere-favoritos:
+      favoritos:
         condition: service_healthy
-      lumiere-notificacoes:
+      notificacoes:
         condition: service_healthy
     networks:
       - lumiere-net
