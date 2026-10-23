@@ -78,6 +78,31 @@ curl http://localhost:8080/notificacoes/enviadas
 
 Derrubar tudo: `docker compose down` (adicione `-v` pra apagar também os dados dos bancos).
 
+## Documentação das APIs (Swagger)
+
+`lumiere-auth`, `lumiere-catalogo` e `lumiere-favoritos` expõem Swagger UI gerado automaticamente a partir dos controllers:
+- http://localhost:8081/swagger-ui/index.html (auth)
+- http://localhost:8082/swagger-ui/index.html (catálogo)
+- http://localhost:8083/swagger-ui/index.html (favoritos)
+
+`lumiere-gateway` não tem Swagger próprio (é um proxy — o `/**` dele intercepta a rota antes de chegar no Swagger); consulte a doc do serviço de destino.
+
+## Health check
+
+Todos os 5 serviços expõem `GET /actuator/health`. O `docker-compose.yml` usa isso pra só subir um serviço depois que suas dependências estiverem de verdade prontas (não só "o container iniciou").
+
+## Banco de dados e migrações
+
+`lumiere-auth`, `lumiere-favoritos` e `lumiere-notificacoes` usam [Flyway](https://flywaydb.org/) (`src/main/resources/db/migration/`) para versionar o schema — `spring.jpa.hibernate.ddl-auto=validate`, o Hibernate só confere se o schema bate, quem cria as tabelas é o Flyway na subida do serviço.
+
+## Testes
+
+Cada serviço tem testes unitários das regras de negócio e dos caminhos de falha (`src/test/java`), usando JUnit 5 + Mockito (já incluídos nos starters `*-test` do Spring Boot) e `MockRestServiceServer` pros clients HTTP. Rodar, dentro da pasta do serviço:
+
+```powershell
+.\mvnw.cmd test
+```
+
 ## Desenvolvimento sem Docker
 
 Cada serviço também roda local via Maven Wrapper (`./mvnw spring-boot:run` dentro da pasta do serviço), desde que o Postgres correspondente (quando o serviço tiver um) esteja acessível e as variáveis de ambiente (`JWT_SECRET`, `TMDB_API_TOKEN`, `SPRING_DATASOURCE_*`, `CATALOGO_URL`, `FAVORITOS_URL`, `LUMIERE_*_URL`) estejam configuradas.
@@ -86,4 +111,5 @@ Cada serviço também roda local via Maven Wrapper (`./mvnw spring-boot:run` den
 
 - Sem envio real de e-mail/push no `lumiere-notificacoes` (só log) — ver "Decisões explícitas" acima.
 - `lumiere-notificacoes` só verifica a lista de desejos; ainda não detecta lançamento novo num streaming seguido (`/streamings-seguidos`).
+- O `lumiere-gateway` demora ~1 min pra retornar 503 quando um serviço de destino está totalmente fora do ar (sem timeout de conexão configurado no `RestClient` ainda).
 - Sem manifests Kubernetes ainda (próxima etapa).
