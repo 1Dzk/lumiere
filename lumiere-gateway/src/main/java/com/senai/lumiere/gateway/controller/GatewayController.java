@@ -1,5 +1,6 @@
 package com.senai.lumiere.gateway.controller;
 
+import com.senai.lumiere.gateway.exception.ServicoIndisponivelException;
 import com.senai.lumiere.gateway.routing.RotaResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Collections;
 import java.util.Set;
@@ -42,8 +44,12 @@ public class GatewayController {
             spec.body(corpo);
         }
 
-        return spec.retrieve()
-                .onStatus(HttpStatusCode::isError, (req, res) -> { })
-                .toEntity(byte[].class);
+        try {
+            return spec.retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> { })
+                    .toEntity(byte[].class);
+        } catch (RestClientException ex) {
+            throw new ServicoIndisponivelException(caminho, ex);
+        }
     }
 }

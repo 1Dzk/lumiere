@@ -20,4 +20,13 @@ public class GlobalExceptionHandler {
         corpo.put("mensagem", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(corpo);
     }
+
+    @ExceptionHandler(ServicoIndisponivelException.class)
+    public ResponseEntity<Map<String, Object>> handleServicoIndisponivel(ServicoIndisponivelException ex) {
+        Map<String, Object> corpo = new LinkedHashMap<>();
+        corpo.put("timestamp", Instant.now());
+        corpo.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
+        corpo.put("mensagem", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(corpo);
+    }
 }

@@ -47,6 +47,12 @@ services:
     depends_on:
       postgres-auth:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
     networks:
       - lumiere-net
 
@@ -56,6 +62,12 @@ services:
       - "8082:8082"
     environment:
       TMDB_API_TOKEN: ${TMDB_API_TOKEN}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
     networks:
       - lumiere-net
 
@@ -72,6 +84,12 @@ services:
     depends_on:
       postgres-favoritos:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
     networks:
       - lumiere-net
 
@@ -108,9 +126,15 @@ services:
       postgres-notificacoes:
         condition: service_healthy
       lumiere-favoritos:
-        condition: service_started
+        condition: service_healthy
       lumiere-catalogo:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
     networks:
       - lumiere-net
 
@@ -124,10 +148,14 @@ services:
       LUMIERE_FAVORITOS_URL: http://lumiere-favoritos:8083
       LUMIERE_NOTIFICACOES_URL: http://lumiere-notificacoes:8084
     depends_on:
-      - lumiere-auth
-      - lumiere-catalogo
-      - lumiere-favoritos
-      - lumiere-notificacoes
+      lumiere-auth:
+        condition: service_healthy
+      lumiere-catalogo:
+        condition: service_healthy
+      lumiere-favoritos:
+        condition: service_healthy
+      lumiere-notificacoes:
+        condition: service_healthy
     networks:
       - lumiere-net
 
