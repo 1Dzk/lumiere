@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lumiere</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">🎬 Lumiere</div>
+
+  <form id="form-busca" class="busca">
+    <input id="input-busca" type="text" placeholder="Buscar filmes e séries...">
+    <button type="submit">Buscar</button>
+  </form>
+
+  <div id="area-auth">
+    <button id="btn-abrir-login">Entrar</button>
+  </div>
+</header>
+
+<nav id="tabs" class="tabs oculto">
+  <button data-tab="catalogo" class="tab-ativa">Catálogo</button>
+  <button data-tab="favoritos">Favoritos</button>
+  <button data-tab="desejos">Desejos</button>
+  <button data-tab="notificacoes">Notificações</button>
+</nav>
+
+<main id="conteudo">
+  <p class="carregando">Carregando catálogo...</p>
+</main>
+
+<dialog id="modal-auth">
+  <button class="fechar" data-fechar="modal-auth">×</button>
+
+  <div class="auth-tabs">
+    <button id="aba-login" class="auth-tab-ativa">Entrar</button>
+    <button id="aba-registro">Criar conta</button>
+  </div>
+
+  <form id="form-login" class="form-auth">
+    <label>E-mail<input type="email" id="login-email" required></label>
+    <label>Senha<input type="password" id="login-senha" required></label>
+    <button type="submit">Entrar</button>
+    <p class="erro" id="login-erro"></p>
+  </form>
+
+  <form id="form-registro" class="form-auth oculto">
+    <label>Nome<input type="text" id="registro-nome" required></label>
+    <label>E-mail<input type="email" id="registro-email" required></label>
+    <label>Senha (mín. 8 caracteres)<input type="password" id="registro-senha" minlength="8" required></label>
+    <button type="submit">Criar conta</button>
+    <p class="erro" id="registro-erro"></p>
+  </form>
+</dialog>
+
+<dialog id="modal-detalhe">
+  <button class="fechar" data-fechar="modal-detalhe">×</button>
+  <div id="detalhe-conteudo"></div>
+</dialog>
+
+<div id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

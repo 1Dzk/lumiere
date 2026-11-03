@@ -6,27 +6,21 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(RotaNaoEncontradaException.class)
-    public ResponseEntity<Map<String, Object>> handleRotaNaoEncontrada(RotaNaoEncontradaException ex) {
-        Map<String, Object> corpo = new LinkedHashMap<>();
-        corpo.put("timestamp", Instant.now());
-        corpo.put("status", HttpStatus.NOT_FOUND.value());
-        corpo.put("mensagem", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(corpo);
+    public ResponseEntity<ErroResponse> handleRotaNaoEncontrada(RotaNaoEncontradaException ex) {
+        return construir(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(ServicoIndisponivelException.class)
-    public ResponseEntity<Map<String, Object>> handleServicoIndisponivel(ServicoIndisponivelException ex) {
-        Map<String, Object> corpo = new LinkedHashMap<>();
-        corpo.put("timestamp", Instant.now());
-        corpo.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
-        corpo.put("mensagem", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(corpo);
+    public ResponseEntity<ErroResponse> handleServicoIndisponivel(ServicoIndisponivelException ex) {
+        return construir(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
+    private ResponseEntity<ErroResponse> construir(HttpStatus status, String mensagem) {
+        return ResponseEntity.status(status).body(new ErroResponse(Instant.now(), status.value(), mensagem, null));
     }
 }

@@ -14,35 +14,25 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidacao(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErroResponse> handleValidacao(MethodArgumentNotValidException ex) {
         Map<String, String> erros = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(erro ->
                 erros.put(erro.getField(), erro.getDefaultMessage()));
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(corpoErro(HttpStatus.BAD_REQUEST, "Dados inválidos", erros));
+        return construir(HttpStatus.BAD_REQUEST, "Dados inválidos", erros);
     }
 
     @ExceptionHandler(EmailJaCadastradoException.class)
-    public ResponseEntity<Map<String, Object>> handleEmailDuplicado(EmailJaCadastradoException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(corpoErro(HttpStatus.CONFLICT, ex.getMessage(), null));
+    public ResponseEntity<ErroResponse> handleEmailDuplicado(EmailJaCadastradoException ex) {
+        return construir(HttpStatus.CONFLICT, ex.getMessage(), null);
     }
 
     @ExceptionHandler(CredenciaisInvalidasException.class)
-    public ResponseEntity<Map<String, Object>> handleCredenciaisInvalidas(CredenciaisInvalidasException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(corpoErro(HttpStatus.UNAUTHORIZED, ex.getMessage(), null));
+    public ResponseEntity<ErroResponse> handleCredenciaisInvalidas(CredenciaisInvalidasException ex) {
+        return construir(HttpStatus.UNAUTHORIZED, ex.getMessage(), null);
     }
 
-    private Map<String, Object> corpoErro(HttpStatus status, String mensagem, Map<String, String> erros) {
-        Map<String, Object> corpo = new LinkedHashMap<>();
-        corpo.put("timestamp", Instant.now());
-        corpo.put("status", status.value());
-        corpo.put("mensagem", mensagem);
-        if (erros != null) {
-            corpo.put("erros", erros);
-        }
-        return corpo;
+    private ResponseEntity<ErroResponse> construir(HttpStatus status, String mensagem, Map<String, String> erros) {
+        return ResponseEntity.status(status).body(new ErroResponse(Instant.now(), status.value(), mensagem, erros));
     }
 }
