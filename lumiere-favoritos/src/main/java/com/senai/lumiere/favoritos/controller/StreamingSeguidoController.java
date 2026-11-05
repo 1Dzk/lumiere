@@ -45,7 +45,8 @@ public class StreamingSeguidoController {
             @ApiResponse(responseCode = "201", description = "Streaming seguido"),
             @ApiResponse(responseCode = "400", description = "Nome do streaming vazio",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
             @ApiResponse(responseCode = "409", description = "O usuário já segue esse streaming",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
@@ -60,7 +61,8 @@ public class StreamingSeguidoController {
     @Operation(summary = "Lista os streamings seguidos", description = "Devolve só os streamings seguidos por quem está logado.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista carregada"),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @GetMapping
     public List<StreamingSeguidoResponse> listar(@Parameter(hidden = true) @AuthenticationPrincipal UsuarioAutenticado usuario) {
@@ -70,7 +72,8 @@ public class StreamingSeguidoController {
     @Operation(summary = "Deixa de seguir um streaming", description = "Só remove se o registro pertencer ao usuário logado.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Streaming removido"),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
             @ApiResponse(responseCode = "404", description = "Registro não existe ou é de outro usuário",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })

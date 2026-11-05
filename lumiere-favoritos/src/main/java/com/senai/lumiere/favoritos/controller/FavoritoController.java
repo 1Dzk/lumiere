@@ -45,7 +45,8 @@ public class FavoritoController {
             @ApiResponse(responseCode = "201", description = "Favorito criado"),
             @ApiResponse(responseCode = "400", description = "Corpo inválido (faltou `tituloId` ou `tipo`)",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
             @ApiResponse(responseCode = "404", description = "O título não existe no catálogo",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
             @ApiResponse(responseCode = "409", description = "Esse título já está nos favoritos do usuário",
@@ -62,7 +63,8 @@ public class FavoritoController {
     @Operation(summary = "Lista os favoritos do usuário", description = "Devolve só os favoritos de quem está logado.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista carregada (vazia se o usuário não favoritou nada)"),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @GetMapping
     public List<FavoritoResponse> listar(@Parameter(hidden = true) @AuthenticationPrincipal UsuarioAutenticado usuario) {
@@ -75,7 +77,8 @@ public class FavoritoController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Favorito removido"),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
             @ApiResponse(responseCode = "404", description = "Favorito não existe ou é de outro usuário",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })

@@ -74,7 +74,8 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Usuário encontrado"),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponse> me(

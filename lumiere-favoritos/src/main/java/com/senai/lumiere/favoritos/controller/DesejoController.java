@@ -45,7 +45,8 @@ public class DesejoController {
             @ApiResponse(responseCode = "201", description = "Desejo criado"),
             @ApiResponse(responseCode = "400", description = "Corpo inválido (faltou `tituloId` ou `tipo`)",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
             @ApiResponse(responseCode = "404", description = "O título não existe no catálogo",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
             @ApiResponse(responseCode = "409", description = "Esse título já está na lista de desejos do usuário",
@@ -62,7 +63,8 @@ public class DesejoController {
     @Operation(summary = "Lista os desejos do usuário", description = "Devolve só os desejos de quem está logado.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista carregada"),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @GetMapping
     public List<DesejoResponse> listar(@Parameter(hidden = true) @AuthenticationPrincipal UsuarioAutenticado usuario) {
@@ -72,7 +74,8 @@ public class DesejoController {
     @Operation(summary = "Remove um desejo", description = "Só remove se o desejo pertencer ao usuário logado.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Desejo removido"),
-            @ApiResponse(responseCode = "403", description = "Token ausente, expirado ou inválido", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
             @ApiResponse(responseCode = "404", description = "Desejo não existe ou é de outro usuário",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
