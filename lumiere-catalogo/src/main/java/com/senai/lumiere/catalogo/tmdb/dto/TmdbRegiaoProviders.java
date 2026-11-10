@@ -6,6 +6,7 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TmdbRegiaoProviders(
+        String link,
         List<TmdbProvedor> flatrate,
         List<TmdbProvedor> rent,
         List<TmdbProvedor> buy

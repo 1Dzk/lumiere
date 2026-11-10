@@ -2,7 +2,9 @@ package com.senai.lumiere.catalogo.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Versão resumida de um título, usada em listas (busca e em alta)")
+import java.util.List;
+
+@Schema(description = "Versão resumida de um título, usada em listas (busca, em alta e descobrir)")
 public record TituloResumoResponse(
 
         @Schema(description = "Id na TMDB — é o `tituloId` usado ao favoritar", example = "969681")
@@ -22,6 +24,12 @@ public record TituloResumoResponse(
         String dataLancamento,
 
         @Schema(example = "É um novo dia para Peter Parker...")
-        String sinopse
+        String sinopse,
+
+        @Schema(description = "Até 2 gêneros, pra exibir no card", example = "[\"Ficção científica\", \"Ação\"]")
+        List<String> generos,
+
+        @Schema(description = "Nota média da TMDB, de 0 a 10", example = "8.352")
+        Double notaMedia
 ) {
 }

@@ -1,10 +1,14 @@
 package com.senai.lumiere.catalogo.controller;
 
 import com.senai.lumiere.catalogo.dto.DisponibilidadeStreamingResponse;
+import com.senai.lumiere.catalogo.dto.GeneroResponse;
+import com.senai.lumiere.catalogo.dto.ProvedorDisponivelResponse;
+import com.senai.lumiere.catalogo.dto.TipoTitulo;
 import com.senai.lumiere.catalogo.dto.TituloDetalheResponse;
 import com.senai.lumiere.catalogo.dto.TituloResumoResponse;
 import com.senai.lumiere.catalogo.exception.ErroResponse;
 import com.senai.lumiere.catalogo.service.CatalogoService;
+import com.senai.lumiere.catalogo.service.GeneroService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -31,6 +35,7 @@ import java.util.List;
 public class CatalogoController {
 
     private final CatalogoService catalogoService;
+    private final GeneroService generoService;
 
     @Operation(
             summary = "Busca filmes e séries pelo nome",
@@ -135,5 +140,51 @@ public class CatalogoController {
     @GetMapping("/em-alta")
     public List<TituloResumoResponse> emAlta() {
         return catalogoService.emAlta();
+    }
+
+    @Operation(summary = "Gêneros disponíveis para filtrar o catálogo", description = "Lista combinada de gêneros de filme e série da TMDB, pra montar um filtro.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista carregada"),
+            @ApiResponse(responseCode = "503", description = "A TMDB não respondeu",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+    })
+    @GetMapping("/generos")
+    public List<GeneroResponse> generos() {
+        return generoService.listar();
+    }
+
+    @Operation(
+            summary = "Descobre títulos por filtro",
+            description = "Navega o catálogo além do em-alta: filtra por tipo (FILME/SERIE) e/ou gênero, ordenado por popularidade."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Resultados filtrados (lista vazia se nada bateu)"),
+            @ApiResponse(responseCode = "503", description = "A TMDB não respondeu",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+    })
+    @GetMapping("/descobrir")
+    public List<TituloResumoResponse> descobrir(
+            @Parameter(description = "Filtra só filme ou só série; omitido traz os dois") @RequestParam(required = false) TipoTitulo tipo,
+            @Parameter(description = "Id de gênero da TMDB (ver /catalogo/generos)", example = "28") @RequestParam(required = false) Long genero,
+            @Parameter(description = "Página de resultados (20 por página)", example = "1") @RequestParam(defaultValue = "1") int pagina
+    ) {
+        return catalogoService.descobrir(tipo, genero, pagina);
+    }
+
+    @Operation(
+            summary = "Streamings que existem de verdade, pra escolher ao seguir um",
+            description = "Lista todo provedor de filme/série que a TMDB conhece numa região — usar como opções ao seguir um streaming, em vez de texto livre."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista carregada"),
+            @ApiResponse(responseCode = "503", description = "A TMDB não respondeu",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+    })
+    @GetMapping("/provedores")
+    public List<ProvedorDisponivelResponse> provedores(
+            @Parameter(description = "País no formato ISO 3166-1 (BR, US, PT...)", example = "BR")
+            @RequestParam(defaultValue = "BR") String regiao
+    ) {
+        return catalogoService.provedoresDisponiveis(regiao);
     }
 }

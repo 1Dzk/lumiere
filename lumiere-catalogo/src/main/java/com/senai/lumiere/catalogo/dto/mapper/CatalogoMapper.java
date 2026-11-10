@@ -2,6 +2,7 @@ package com.senai.lumiere.catalogo.dto.mapper;
 
 import com.senai.lumiere.catalogo.dto.DisponibilidadePorRegiao;
 import com.senai.lumiere.catalogo.dto.DisponibilidadeStreamingResponse;
+import com.senai.lumiere.catalogo.dto.ProvedorDisponivelResponse;
 import com.senai.lumiere.catalogo.dto.ProvedorStreaming;
 import com.senai.lumiere.catalogo.dto.TipoAcesso;
 import com.senai.lumiere.catalogo.dto.TipoTitulo;
@@ -30,8 +31,18 @@ public class CatalogoMapper {
         this.imageBaseUrl = imageBaseUrl;
     }
 
-    public TituloResumoResponse toResumo(TmdbItemResumo item) {
+    private static final int MAX_GENEROS_NO_CARD = 2;
+
+    public TituloResumoResponse toResumo(TmdbItemResumo item, Map<Long, String> generosPorId) {
         TipoTitulo tipo = "tv".equals(item.mediaType()) ? TipoTitulo.SERIE : TipoTitulo.FILME;
+        return toResumo(item, tipo, generosPorId);
+    }
+
+    /**
+     * Para respostas da TMDB que não trazem `media_type` (ex.: /discover/movie, /discover/tv),
+     * onde o tipo já é conhecido por qual endpoint foi chamado.
+     */
+    public TituloResumoResponse toResumo(TmdbItemResumo item, TipoTitulo tipo, Map<Long, String> generosPorId) {
         String titulo = tipo == TipoTitulo.SERIE ? item.name() : item.title();
         String dataLancamento = tipo == TipoTitulo.SERIE ? item.firstAirDate() : item.releaseDate();
 
@@ -41,7 +52,9 @@ public class CatalogoMapper {
                 titulo,
                 montarImagemUrl(item.posterPath()),
                 dataLancamento,
-                item.overview()
+                item.overview(),
+                nomesGenerosPorId(item.genreIds(), generosPorId),
+                item.voteAverage()
         );
     }
 
@@ -82,19 +95,22 @@ public class CatalogoMapper {
     public DisponibilidadeStreamingResponse toDisponibilidade(Long tituloId, String regiaoSolicitada, TmdbProvidersResponse providers) {
         Map<String, TmdbRegiaoProviders> resultados = providers.results() == null ? Map.of() : providers.results();
 
-        List<ProvedorStreaming> streamingsNaRegiao = streamingsDaRegiao(resultados.get(regiaoSolicitada.toUpperCase()));
+        TmdbRegiaoProviders regiaoPedida = resultados.get(regiaoSolicitada.toUpperCase());
+        List<ProvedorStreaming> streamingsNaRegiao = streamingsDaRegiao(regiaoPedida);
 
         if (!streamingsNaRegiao.isEmpty()) {
-            return new DisponibilidadeStreamingResponse(tituloId, regiaoSolicitada, true, streamingsNaRegiao, List.of());
+            return new DisponibilidadeStreamingResponse(
+                    tituloId, regiaoSolicitada, true, streamingsNaRegiao, List.of(), regiaoPedida.link());
         }
 
         List<DisponibilidadePorRegiao> outrasRegioes = resultados.entrySet().stream()
                 .filter(entry -> !entry.getKey().equalsIgnoreCase(regiaoSolicitada))
-                .map(entry -> new DisponibilidadePorRegiao(entry.getKey(), streamingsDaRegiao(entry.getValue())))
+                .map(entry -> new DisponibilidadePorRegiao(
+                        entry.getKey(), streamingsDaRegiao(entry.getValue()), entry.getValue().link()))
                 .filter(regiao -> !regiao.streamings().isEmpty())
                 .toList();
 
-        return new DisponibilidadeStreamingResponse(tituloId, regiaoSolicitada, false, List.of(), outrasRegioes);
+        return new DisponibilidadeStreamingResponse(tituloId, regiaoSolicitada, false, List.of(), outrasRegioes, null);
     }
 
     private List<ProvedorStreaming> streamingsDaRegiao(TmdbRegiaoProviders regiao) {
@@ -121,8 +137,23 @@ public class CatalogoMapper {
         )));
     }
 
+    public ProvedorDisponivelResponse toProvedorDisponivel(TmdbProvedor provedor) {
+        return new ProvedorDisponivelResponse(provedor.providerName(), montarImagemUrl(provedor.logoPath()));
+    }
+
     private List<String> nomesGeneros(List<TmdbGenero> generos) {
         return generos == null ? List.of() : generos.stream().map(TmdbGenero::name).toList();
+    }
+
+    private List<String> nomesGenerosPorId(List<Long> generoIds, Map<Long, String> generosPorId) {
+        if (generoIds == null || generosPorId == null) {
+            return List.of();
+        }
+        return generoIds.stream()
+                .map(generosPorId::get)
+                .filter(nome -> nome != null)
+                .limit(MAX_GENEROS_NO_CARD)
+                .toList();
     }
 
     private String montarImagemUrl(String path) {

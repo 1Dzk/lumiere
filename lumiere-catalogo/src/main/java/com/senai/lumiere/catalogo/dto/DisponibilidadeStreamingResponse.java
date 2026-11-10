@@ -20,6 +20,10 @@ public record DisponibilidadeStreamingResponse(
         List<ProvedorStreaming> streamingsNaRegiao,
 
         @Schema(description = "Preenchido só quando não há disponibilidade na região pedida: outros países onde o título está")
-        List<DisponibilidadePorRegiao> outrasRegioes
+        List<DisponibilidadePorRegiao> outrasRegioes,
+
+        @Schema(description = "Página da TMDB com os streamings da região pedida clicáveis (não é um link direto pro app do streaming — a TMDB não expõe isso de graça)",
+                example = "https://www.themoviedb.org/movie/969681-title/watch?locale=BR")
+        String linkAssistir
 ) {
 }
