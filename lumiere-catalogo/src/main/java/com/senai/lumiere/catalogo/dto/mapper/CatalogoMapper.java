@@ -31,17 +31,13 @@ public class CatalogoMapper {
         this.imageBaseUrl = imageBaseUrl;
     }
 
-    private static final int MAX_GENEROS_NO_CARD = 2;
+    private static final int MAX_GENEROS_NO_CARD = 6;
 
     public TituloResumoResponse toResumo(TmdbItemResumo item, Map<Long, String> generosPorId) {
         TipoTitulo tipo = "tv".equals(item.mediaType()) ? TipoTitulo.SERIE : TipoTitulo.FILME;
         return toResumo(item, tipo, generosPorId);
     }
 
-    /**
-     * Para respostas da TMDB que não trazem `media_type` (ex.: /discover/movie, /discover/tv),
-     * onde o tipo já é conhecido por qual endpoint foi chamado.
-     */
     public TituloResumoResponse toResumo(TmdbItemResumo item, TipoTitulo tipo, Map<Long, String> generosPorId) {
         String titulo = tipo == TipoTitulo.SERIE ? item.name() : item.title();
         String dataLancamento = tipo == TipoTitulo.SERIE ? item.firstAirDate() : item.releaseDate();

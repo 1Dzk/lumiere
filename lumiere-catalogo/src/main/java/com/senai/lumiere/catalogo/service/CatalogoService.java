@@ -27,8 +27,7 @@ public class CatalogoService {
 
     private static final Set<String> TIPOS_SUPORTADOS = Set.of("movie", "tv");
 
-    /** Quantas páginas da TMDB (20 itens cada) combinar pro "em alta" — mais itens em destaque na home. */
-    private static final int PAGINAS_EM_ALTA = 3;
+    private static final int PAGINAS_EM_ALTA = 50;
 
     private final TmdbClient tmdbClient;
     private final CatalogoMapper mapper;
@@ -68,6 +67,10 @@ public class CatalogoService {
         return mapper.toDisponibilidade(id, regiao, tmdbClient.providersSerie(id));
     }
 
+    /**
+     * Decisão: se qualquer uma das páginas falhar, a exceção sobe e a lista inteira falha (503), em vez de
+     * devolver uma lista parcial. Assim o cache (15 min) nunca guarda um "em alta" incompleto.
+     */
     @Cacheable("emAlta")
     public List<TituloResumoResponse> emAlta() {
         Map<Long, String> generosPorId = mapaGeneros();
@@ -85,6 +88,11 @@ public class CatalogoService {
         return resultado;
     }
 
+    /**
+     * Decisão: quando o tipo não é informado, filmes e séries vêm de duas chamadas. Se uma falhar, a
+     * exceção sobe (503) em vez de devolver só a metade que funcionou, para o cliente não achar que
+     * "não há séries" quando na verdade a TMDB falhou.
+     */
     @Cacheable("descobrir")
     public List<TituloResumoResponse> descobrir(TipoTitulo tipo, Long genero, int pagina) {
         Map<Long, String> generosPorId = mapaGeneros();
@@ -104,6 +112,7 @@ public class CatalogoService {
         return resultado;
     }
 
+    /** Mesma decisão de {@link #descobrir}: filme e série vêm de duas chamadas e falha parcial vira 503. */
     @Cacheable("provedoresDisponiveis")
     public List<ProvedorDisponivelResponse> provedoresDisponiveis(String regiao) {
         Map<String, ProvedorDisponivelResponse> provedoresPorNome = new LinkedHashMap<>();

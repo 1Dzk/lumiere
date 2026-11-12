@@ -67,6 +67,8 @@ class CatalogoServiceTest {
     void emAlta_deveCombinarVariasPaginasSemRepetirIds() {
         TmdbItemResumo filme1 = new TmdbItemResumo(1L, "movie", "Duna", null, "sinopse", null, "2021-09-15", null, null, null);
         TmdbItemResumo filme2 = new TmdbItemResumo(2L, "movie", "Duna 2", null, "sinopse", null, "2024-03-01", null, null, null);
+        // o serviço percorre todas as páginas configuradas; as que não interessam aqui vêm vazias
+        when(tmdbClient.emAlta(anyInt())).thenReturn(new TmdbListaResponse(List.of()));
         when(tmdbClient.emAlta(1)).thenReturn(new TmdbListaResponse(List.of(filme1)));
         when(tmdbClient.emAlta(2)).thenReturn(new TmdbListaResponse(List.of(filme1, filme2)));
         when(tmdbClient.emAlta(3)).thenReturn(new TmdbListaResponse(List.of(filme2)));

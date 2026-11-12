@@ -1,10 +1,13 @@
 package com.senai.lumiere.catalogo.tmdb;
 
 import com.senai.lumiere.catalogo.exception.TituloNaoEncontradoException;
+import com.senai.lumiere.catalogo.exception.TmdbAcessoNegadoException;
 import com.senai.lumiere.catalogo.exception.TmdbIndisponivelException;
+import com.senai.lumiere.catalogo.exception.TmdbLimiteExcedidoException;
 import com.senai.lumiere.catalogo.tmdb.dto.TmdbFilmeDetalhe;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
@@ -36,6 +39,51 @@ class TmdbClientTest {
                 .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
 
         assertThatThrownBy(() -> tmdbClient.detalheFilme(1L))
+                .isInstanceOf(TmdbIndisponivelException.class);
+    }
+
+    @Test
+    void detalheFilme_deveLancarAcessoNegado_quandoTmdbRecusaOToken() {
+        servidor.expect(requestTo("http://tmdb.teste/movie/1?language=pt-BR"))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+        assertThatThrownBy(() -> tmdbClient.detalheFilme(1L))
+                .isInstanceOf(TmdbAcessoNegadoException.class);
+    }
+
+    @Test
+    void detalheFilme_deveLancarLimiteExcedido_quandoTmdbResponde429() {
+        servidor.expect(requestTo("http://tmdb.teste/movie/1?language=pt-BR"))
+                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
+
+        assertThatThrownBy(() -> tmdbClient.detalheFilme(1L))
+                .isInstanceOf(TmdbLimiteExcedidoException.class);
+    }
+
+    @Test
+    void detalheFilme_deveLancarTmdbIndisponivel_quandoTmdbRespondeOutro4xx() {
+        servidor.expect(requestTo("http://tmdb.teste/movie/1?language=pt-BR"))
+                .andRespond(withStatus(HttpStatusCode.valueOf(422)));
+
+        assertThatThrownBy(() -> tmdbClient.detalheFilme(1L))
+                .isInstanceOf(TmdbIndisponivelException.class);
+    }
+
+    @Test
+    void providersFilme_deveLancarTituloNaoEncontrado_quandoTmdbResponde404() {
+        servidor.expect(requestTo("http://tmdb.teste/movie/999999/watch/providers"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThatThrownBy(() -> tmdbClient.providersFilme(999999L))
+                .isInstanceOf(TituloNaoEncontradoException.class);
+    }
+
+    @Test
+    void emAlta_deveLancarTmdbIndisponivel_quandoTmdbResponde404PorqueNaoHaTituloEspecifico() {
+        servidor.expect(requestTo("http://tmdb.teste/trending/all/day?language=pt-BR&page=1"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThatThrownBy(() -> tmdbClient.emAlta(1))
                 .isInstanceOf(TmdbIndisponivelException.class);
     }
 
