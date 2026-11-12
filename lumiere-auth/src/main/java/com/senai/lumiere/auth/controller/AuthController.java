@@ -41,9 +41,11 @@ public class AuthController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Conta criada"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos (e-mail mal formatado, senha com menos de 8 caracteres, campo faltando)",
+            @ApiResponse(responseCode = "400", description = "Dados inválidos (e-mail mal formatado, senha fora de 8–72 caracteres, campo faltando ou grande demais) ou corpo ausente/JSON quebrado. Nos erros de campo, `erros` diz qual e por quê",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "409", description = "Já existe uma conta com esse e-mail",
+            @ApiResponse(responseCode = "409", description = "Já existe uma conta com esse e-mail (maiúsculas e espaços nas pontas não contam como e-mail diferente)",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "415", description = "O corpo precisa ser enviado como `application/json`",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @PostMapping("/registro")
@@ -57,9 +59,11 @@ public class AuthController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Login aceito, token emitido"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos",
+            @ApiResponse(responseCode = "400", description = "Dados inválidos (campo faltando ou grande demais) ou corpo ausente/JSON quebrado",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
             @ApiResponse(responseCode = "401", description = "E-mail não cadastrado ou senha incorreta (a resposta é a mesma nos dois casos, de propósito)",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "415", description = "O corpo precisa ser enviado como `application/json`",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @PostMapping("/login")
@@ -74,7 +78,7 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Usuário encontrado"),
-            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido",
+            @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido, ou a conta dona do token não existe mais (descarte o token e faça login de novo)",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @GetMapping("/me")

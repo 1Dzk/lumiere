@@ -4,6 +4,7 @@ import com.senai.lumiere.auth.dto.RegistroRequest;
 import com.senai.lumiere.auth.dto.UsuarioResponse;
 import com.senai.lumiere.auth.dto.mapper.UsuarioMapper;
 import com.senai.lumiere.auth.exception.EmailJaCadastradoException;
+import com.senai.lumiere.auth.exception.SessaoInvalidaException;
 import com.senai.lumiere.auth.model.Usuario;
 import com.senai.lumiere.auth.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,5 +64,32 @@ class UsuarioServiceTest {
                 .isInstanceOf(EmailJaCadastradoException.class);
 
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void registrar_deveVirarEmailJaCadastrado_quandoOBancoRecusaPorUnicidade() {
+        // outra requisição cadastrou o mesmo e-mail entre o existsByEmail e o save
+        RegistroRequest request = new RegistroRequest("Ana", "ana@lumiere.dev", "senha12345");
+        when(repository.existsByEmail("ana@lumiere.dev")).thenReturn(false);
+        when(passwordEncoder.encode("senha12345")).thenReturn("hash-da-senha");
+        when(repository.save(any(Usuario.class))).thenThrow(new DataIntegrityViolationException("uk_usuarios_email"));
+
+        assertThatThrownBy(() -> usuarioService.registrar(request))
+                .isInstanceOf(EmailJaCadastradoException.class);
+    }
+
+    @Test
+    void registro_deveNormalizarOEmailNaEntrada() {
+        RegistroRequest request = new RegistroRequest("Ana", "  Ana@Lumiere.DEV ", "senha12345");
+
+        assertThat(request.email()).isEqualTo("ana@lumiere.dev");
+    }
+
+    @Test
+    void buscarPorEmail_deveLancarSessaoInvalida_quandoOUsuarioDoTokenNaoExisteMais() {
+        when(repository.findByEmail("apagado@lumiere.dev")).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.buscarPorEmail("apagado@lumiere.dev"))
+                .isInstanceOf(SessaoInvalidaException.class);
     }
 }
