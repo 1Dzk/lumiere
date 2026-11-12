@@ -1,55 +1,54 @@
 package com.senai.lumiere.gateway.controller;
 
-import com.senai.lumiere.gateway.exception.ServicoIndisponivelException;
+import com.senai.lumiere.gateway.exception.RequisicaoInvalidaException;
+import com.senai.lumiere.gateway.routing.Encaminhador;
 import com.senai.lumiere.gateway.routing.RotaResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
+import java.net.URI;
 import java.util.Collections;
-import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
 public class GatewayController {
 
-    private static final Set<String> CABECALHOS_IGNORADOS = Set.of("host", "content-length");
-
-    private final RestClient restClient;
     private final RotaResolver rotaResolver;
+    private final Encaminhador encaminhador;
 
     @RequestMapping("/**")
     public ResponseEntity<byte[]> encaminhar(HttpServletRequest request, @RequestBody(required = false) byte[] corpo) {
+        // caminho e query CRUS (ainda codificados), exatamente como o cliente mandou
         String caminho = request.getRequestURI();
         String baseUrl = rotaResolver.resolver(caminho);
-        String queryString = request.getQueryString();
-        String uri = baseUrl + caminho + (queryString != null ? "?" + queryString : "");
+        URI destino = montarDestino(baseUrl, caminho, request.getQueryString());
 
-        RestClient.RequestBodySpec spec = restClient.method(HttpMethod.valueOf(request.getMethod())).uri(uri);
+        return encaminhador.encaminhar(
+                HttpMethod.valueOf(request.getMethod()), destino, cabecalhosDe(request), corpo, caminho);
+    }
 
-        Collections.list(request.getHeaderNames()).forEach(nome -> {
-            if (!CABECALHOS_IGNORADOS.contains(nome.toLowerCase())) {
-                spec.header(nome, Collections.list(request.getHeaders(nome)).toArray(new String[0]));
-            }
-        });
-
-        if (corpo != null && corpo.length > 0) {
-            spec.body(corpo);
-        }
-
+    /**
+     * Monta a URI sem recodificar: "am%C3%A9lie%20poulain" chega ao serviço exatamente assim. Texto com
+     * porcentagem quebrada (por exemplo "%ZZ") não vira URI válida, e isso é erro de quem chamou.
+     */
+    private static URI montarDestino(String baseUrl, String caminho, String queryString) {
         try {
-            return spec.retrieve()
-                    .onStatus(HttpStatusCode::isError, (req, res) -> { })
-                    .toEntity(byte[].class);
-        } catch (RestClientException ex) {
-            throw new ServicoIndisponivelException(caminho, ex);
+            return URI.create(baseUrl + caminho + (queryString != null ? "?" + queryString : ""));
+        } catch (IllegalArgumentException ex) {
+            throw new RequisicaoInvalidaException("URL inválida: confira a codificação dos caracteres (por exemplo, %XX)");
         }
+    }
+
+    private static HttpHeaders cabecalhosDe(HttpServletRequest request) {
+        HttpHeaders cabecalhos = new HttpHeaders();
+        Collections.list(request.getHeaderNames())
+                .forEach(nome -> cabecalhos.addAll(nome, Collections.list(request.getHeaders(nome))));
+        return cabecalhos;
     }
 }

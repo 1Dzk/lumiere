@@ -42,4 +42,28 @@ class RotaResolverTest {
         assertThatThrownBy(() -> rotaResolver.resolver("/rota-que-nao-existe"))
                 .isInstanceOf(RotaNaoEncontradaException.class);
     }
+
+    @Test
+    void resolver_naoDeveAceitarPrefixoQueNaoTerminaNumSegmento() {
+        assertThatThrownBy(() -> rotaResolver.resolver("/authors")).isInstanceOf(RotaNaoEncontradaException.class);
+        assertThatThrownBy(() -> rotaResolver.resolver("/catalogoXYZ")).isInstanceOf(RotaNaoEncontradaException.class);
+        assertThatThrownBy(() -> rotaResolver.resolver("/desejos-secretos")).isInstanceOf(RotaNaoEncontradaException.class);
+        assertThatThrownBy(() -> rotaResolver.resolver("/")).isInstanceOf(RotaNaoEncontradaException.class);
+    }
+
+    @Test
+    void resolver_deveAceitarOPrefixoSozinhoEComBarraDepois() {
+        assertThat(rotaResolver.resolver("/auth")).isEqualTo("http://lumiere-auth:8081");
+        assertThat(rotaResolver.resolver("/auth/")).isEqualTo("http://lumiere-auth:8081");
+        assertThat(rotaResolver.resolver("/auth/registro")).isEqualTo("http://lumiere-auth:8081");
+    }
+
+    @Test
+    void rotas_deveListarOsQuatroServicosNaOrdemDeLeitura() {
+        assertThat(rotaResolver.rotas()).extracting(RotaResolver.Rota::id)
+                .containsExactly("auth", "catalogo", "favoritos", "notificacoes");
+        assertThat(rotaResolver.porId("favoritos")).get().extracting(RotaResolver.Rota::prefixos)
+                .asList().containsExactly("/favoritos", "/desejos", "/streamings-seguidos");
+        assertThat(rotaResolver.porId("inexistente")).isEmpty();
+    }
 }
