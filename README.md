@@ -1,115 +1,140 @@
-# Lumiere
+<div align="center">
 
-Catálogo de filmes e séries que mostra em quais streamings (Brasil e outros países) cada título está disponível. A navegação é pública; criar conta é só necessário pra favoritar um título, acompanhar lançamentos de um streaming ou ser avisado quando um filme/série desejado chegar em algum streaming.
+# 🌙 Lumiere
 
-Projeto Integrador III — Back-end e arquitetura distribuída (microsserviços Java/Spring Boot).
+**Descubra onde assistir seus filmes e séries favoritos.**
 
-## Arquitetura
+Um catálogo que mostra em quais streamings cada título está disponível
+e avisa quando aquele filme que você quer ver chegar na sua plataforma.
 
-| Serviço | Pasta | Porta | Responsabilidade | Banco |
-|---|---|---|---|---|
-| `lumiere-gateway` | `lumiere-gateway/` | `8080` | Ponto de entrada único — repassa cada requisição pro serviço certo | sem banco |
-| `lumiere-auth` | `lumiere-auth/` | `8081` | Registro, login, emite JWT | PostgreSQL próprio |
-| `lumiere-catalogo` | `lumiere-catalogo/` | `8082` | Busca, detalhes e streamings disponíveis (via TMDB), público | sem banco — cache em memória |
-| `lumiere-favoritos` | `lumiere-favoritos/` | `8083` | Favoritos, streamings seguidos, desejos — exige JWT | PostgreSQL próprio |
-| `lumiere-notificacoes` | `lumiere-notificacoes/` | `8084` | Job agendado: avisa (no log) quando um título desejado fica disponível | PostgreSQL próprio |
+![Java](https://img.shields.io/badge/Java-Spring%20Boot-6DB33F?logo=springboot&logoColor=white&style=flat-square)
+![Docker](https://img.shields.io/badge/Docker-pronto%20pra%20usar-2496ED?logo=docker&logoColor=white&style=flat-square)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white&style=flat-square)
 
-`lumiere-favoritos` valida o JWT emitido pelo `lumiere-auth` **localmente**, usando o mesmo segredo compartilhado (`JWT_SECRET`) — não existe chamada em runtime entre os dois serviços.
+</div>
 
-O `lumiere-gateway` é o jeito recomendado de acessar o sistema (porta `8080`, repassa `/auth/**`, `/catalogo/**`, `/favoritos|streamings-seguidos|desejos/**` e `/notificacoes/**` pro serviço certo), mas cada serviço também continua acessível direto na sua própria porta.
+---
 
-### Decisões explícitas
+## ✨ Como funciona
 
-- **`lumiere-favoritos` valida o `tituloId` contra o `lumiere-catalogo`** antes de salvar um favorito/desejo. Se o catálogo responder 404, o título é rejeitado (404). **Se o catálogo estiver fora do ar** (timeout/erro 5xx), a validação **deixa passar** — uma falha remota não pode virar "título inválido" pro usuário.
-- **`GET /interno/desejos`** (em `lumiere-favoritos`) lista os desejos de **todos** os usuários, sem autenticação — é uma chamada serviço-a-serviço usada só pelo `lumiere-notificacoes` dentro da rede Docker, não é exposta publicamente pelo gateway.
-- **`lumiere-notificacoes`** só loga o aviso (`docker logs lumiere-notificacoes-1` ou `GET /notificacoes/enviadas`) — não envia e-mail/push de verdade. O mecanismo de detecção (job agendado, evita repetir aviso) está pronto; o canal de envio real fica plugável pra depois.
+- 🎬 **Qualquer pessoa pode navegar** pelo catálogo, buscar títulos e ver onde assistir — sem criar conta
+- ❤️ **Com uma conta**, você pode favoritar títulos, seguir streamings e montar sua lista de desejos
+- 🔔 **Quando um título desejado chega em algum streaming**, o Lumiere registra o aviso para você
 
-## Pré-requisitos
+Os dados de filmes e séries vêm do [TMDB](https://www.themoviedb.org/).
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) rodando
-- Uma API key da TMDB ([themoviedb.org](https://www.themoviedb.org/signup) → Configurações → API → "API Read Access Token")
+> 🎨 O site que usa este backend está em **[lumiere-web](https://github.com/1Dzk/lumiere-web)**.
 
-## Configuração
+---
 
-Crie um arquivo `.env` na raiz do projeto com:
+## 🧩 As peças do sistema
+
+O Lumiere é feito de pequenos serviços, cada um cuidando de uma coisa:
+
+| Serviço | O que faz |
+|---|---|
+| 🚪 **Gateway** | A porta de entrada: recebe tudo e encaminha para o serviço certo |
+| 🔐 **Auth** | Cadastro e login de usuários |
+| 🎞️ **Catálogo** | Busca de filmes e séries e onde assistir |
+| ❤️ **Favoritos** | Favoritos, desejos e streamings seguidos de cada pessoa |
+| 🔔 **Notificações** | Confere periodicamente se algum título desejado ficou disponível |
+
+---
+
+## 🚀 Como rodar
+
+**Você vai precisar de:**
+
+1. [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e aberto
+2. Uma chave gratuita do TMDB — crie sua conta em [themoviedb.org](https://www.themoviedb.org/signup) e copie o *API Read Access Token* em **Configurações → API**
+
+**Passo 1.** Crie um arquivo chamado `.env` na pasta do projeto:
 
 ```
-JWT_SECRET=qualquer-string-com-pelo-menos-32-caracteres
-TMDB_API_TOKEN=seu-api-read-access-token-da-tmdb
-NOTIFICACOES_INTERVALO_MS=60000
+JWT_SECRET=escolha-uma-frase-secreta-com-32-caracteres-ou-mais
+TMDB_API_TOKEN=cole-aqui-o-seu-token-do-tmdb
 ```
 
-- `JWT_SECRET` — segredo compartilhado entre `lumiere-auth` e `lumiere-favoritos` (um assina o token, o outro valida)
-- `TMDB_API_TOKEN` — o "API Read Access Token" da TMDB
-- `NOTIFICACOES_INTERVALO_MS` — de quanto em quanto tempo o job de notificações roda (padrão `60000` = 1 minuto)
-
-O `.env` nunca deve ser commitado (já está no `.gitignore`).
-
-## Executar
+**Passo 2.** Suba tudo com um comando:
 
 ```powershell
 docker compose up -d --build
 ```
 
-Sobe os 8 containers (3 bancos Postgres + os 5 serviços) na mesma rede. Os apps que têm banco só sobem depois que o banco fica saudável (`healthcheck`).
+**Pronto!** 🎉 O sistema fica disponível em **http://localhost:8080**.
 
-Testar a jornada principal (tudo via gateway, porta `8080`):
+Para desligar: `docker compose down`
+
+---
+
+## 👀 Testando rapidinho
+
+Com tudo rodando, veja o que está em alta agora:
 
 ```powershell
-# registro
+curl http://localhost:8080/catalogo/em-alta
+```
+
+<details>
+<summary>📋 Quer testar o fluxo completo (cadastro, login, favoritos)?</summary>
+
+<br>
+
+```powershell
+# criar uma conta
 curl -X POST http://localhost:8080/auth/registro -H "Content-Type: application/json" -d '{"nome":"Teste","email":"teste@lumiere.dev","senha":"senha12345"}'
 
-# login (retorna o token)
+# entrar (a resposta traz o seu token)
 curl -X POST http://localhost:8080/auth/login -H "Content-Type: application/json" -d '{"email":"teste@lumiere.dev","senha":"senha12345"}'
 
-# catálogo (público, não exige token)
-curl http://localhost:8080/catalogo/em-alta
-
-# favoritar um título (troque SEU_TOKEN pelo token do login)
+# favoritar um filme (troque SEU_TOKEN pelo token do login)
 curl -X POST http://localhost:8080/favoritos -H "Content-Type: application/json" -H "Authorization: Bearer SEU_TOKEN" -d '{"tituloId":969681,"tipo":"FILME"}'
-
-# título que não existe no catálogo -> 404
-curl -X POST http://localhost:8080/favoritos -H "Content-Type: application/json" -H "Authorization: Bearer SEU_TOKEN" -d '{"tituloId":999999999,"tipo":"FILME"}'
-
-# desejar um título e esperar o job de notificações encontrar disponibilidade
-curl -X POST http://localhost:8080/desejos -H "Content-Type: application/json" -H "Authorization: Bearer SEU_TOKEN" -d '{"tituloId":969681,"tipo":"FILME"}'
-curl http://localhost:8080/notificacoes/enviadas
 ```
 
-Derrubar tudo: `docker compose down` (adicione `-v` pra apagar também os dados dos bancos).
+</details>
 
-## Documentação das APIs (Swagger)
+---
 
-`lumiere-auth`, `lumiere-catalogo` e `lumiere-favoritos` expõem Swagger UI gerado automaticamente a partir dos controllers:
-- http://localhost:8081/swagger-ui/index.html (auth)
-- http://localhost:8082/swagger-ui/index.html (catálogo)
-- http://localhost:8083/swagger-ui/index.html (favoritos)
+## 📚 Documentação das APIs
 
-`lumiere-gateway` não tem Swagger próprio (é um proxy — o `/**` dele intercepta a rota antes de chegar no Swagger); consulte a doc do serviço de destino.
+Com o sistema rodando, uma página única reúne a documentação de tudo, com botão de teste em cada endpoint:
 
-## Health check
+- 📖 **[Portal de documentação](http://localhost:8080/docs)**: abas para Gateway, Auth, Catálogo, Favoritos e Notificações, todas pela porta do gateway (o caminho real que o app usa)
 
-Todos os 5 serviços expõem `GET /actuator/health`. O `docker-compose.yml` usa isso pra só subir um serviço depois que suas dependências estiverem de verdade prontas (não só "o container iniciou").
+Cada serviço também tem a sua página direta:
 
-## Banco de dados e migrações
+- 🔐 [Auth](http://localhost:8081/docs)
+- 🎞️ [Catálogo](http://localhost:8082/docs)
+- ❤️ [Favoritos](http://localhost:8083/swagger-ui/index.html)
 
-`lumiere-auth`, `lumiere-favoritos` e `lumiere-notificacoes` usam [Flyway](https://flywaydb.org/) (`src/main/resources/db/migration/`) para versionar o schema — `spring.jpa.hibernate.ddl-auto=validate`, o Hibernate só confere se o schema bate, quem cria as tabelas é o Flyway na subida do serviço.
+---
 
-## Testes
+## 🛠️ Para quem vai mexer no código
 
-Cada serviço tem testes unitários das regras de negócio e dos caminhos de falha (`src/test/java`), usando JUnit 5 + Mockito (já incluídos nos starters `*-test` do Spring Boot) e `MockRestServiceServer` pros clients HTTP. Rodar, dentro da pasta do serviço:
+<details>
+<summary>Detalhes técnicos</summary>
 
-```powershell
-.\mvnw.cmd test
-```
+<br>
 
-## Desenvolvimento sem Docker
+- Cada serviço é um projeto Spring Boot independente, com seu próprio banco PostgreSQL quando precisa de um
+- Rodar os testes de um serviço: `.\mvnw.cmd test` dentro da pasta dele
+- Rodar um serviço sem Docker: `./mvnw spring-boot:run` (precisa do Postgres e das variáveis de ambiente configuradas)
+- Todos os serviços expõem `/actuator/health`
 
-Cada serviço também roda local via Maven Wrapper (`./mvnw spring-boot:run` dentro da pasta do serviço), desde que o Postgres correspondente (quando o serviço tiver um) esteja acessível e as variáveis de ambiente (`JWT_SECRET`, `TMDB_API_TOKEN`, `SPRING_DATASOURCE_*`, `CATALOGO_URL`, `FAVORITOS_URL`, `LUMIERE_*_URL`) estejam configuradas.
+</details>
 
-## Limitações conhecidas
+---
 
-- Sem envio real de e-mail/push no `lumiere-notificacoes` (só log) — ver "Decisões explícitas" acima.
-- `lumiere-notificacoes` só verifica a lista de desejos; ainda não detecta lançamento novo num streaming seguido (`/streamings-seguidos`).
-- O `lumiere-gateway` demora ~1 min pra retornar 503 quando um serviço de destino está totalmente fora do ar (sem timeout de conexão configurado no `RestClient` ainda).
-- Sem manifests Kubernetes ainda (próxima etapa).
+## 🔮 Próximos passos
+
+- ✉️ Enviar e-mail ou push de verdade quando um título desejado chegar (hoje o aviso fica registrado nos logs)
+- 📡 Avisar também sobre lançamentos nos streamings que você segue
+- ☸️ Preparar o projeto para rodar em Kubernetes
+
+---
+
+<div align="center">
+
+Feito por [Henrique](https://github.com/1Dzk) · Projeto Integrador III
+
+</div>
